@@ -42,7 +42,7 @@ def run_python_grader(
     args = parse_args()
     submission_dir = Path(args.submission_dir)
     output_path = Path(args.output)
-    submission_file = submission_dir / required_file
+    submission_file = (submission_dir / required_file).resolve()
 
     if not submission_file.exists():
         write_grade(
