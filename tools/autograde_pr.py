@@ -26,8 +26,9 @@ from typing import Any
 
 COMMENT_MARKER = "<!-- auto-grade -->"
 STATUS_CONTEXT = "auto-grade"
+PYTHON_SUBMISSION_NAME = "solution.py"
 SUBMISSION_RE = re.compile(
-    r"^week(?P<week>[1-9][0-9]*)/exercises/submissions/(?P<submitter>[^/]+)/(?P<file>.+)$"
+    r"^week(?P<week>0|[1-9][0-9]*)/exercises/submissions/(?P<submitter>[^/]+)/(?P<file>.+)$"
 )
 
 
@@ -82,6 +83,15 @@ def main() -> int:
             create_commit_status(context, "failure", "Invalid assignment submission PR.")
             print(classification.reason, file=sys.stderr)
             return 1
+
+        if has_python_solution_submission(files):
+            create_commit_status(
+                context,
+                "success",
+                "Python solution.py submission; handled by python-grade.",
+            )
+            print("Python solution.py submission; skipped LLM autograding.")
+            return 0
 
         config = prepare_runtime_config(Path(args.config), classification)
         with tempfile.TemporaryDirectory(prefix="autograde-") as temp_dir_name:
@@ -277,6 +287,14 @@ def touched_any_submission_path(paths: list[str]) -> bool:
     return any("/exercises/submissions/" in path for path in paths)
 
 
+def has_python_solution_submission(files: list[dict[str, Any]]) -> bool:
+    for file_info in files:
+        filename = str(file_info.get("filename", ""))
+        if filename.endswith(f"/{PYTHON_SUBMISSION_NAME}") and SUBMISSION_RE.match(filename):
+            return True
+    return False
+
+
 def prepare_runtime_config(config_path: Path, classification: Classification) -> dict[str, Any]:
     config = load_simple_yaml(config_path)
     week = classification.week or ""
@@ -417,7 +435,7 @@ def run_week_grader(
     grader_path = Path(week) / "exercises" / "grader.py"
     if not grader_path.exists():
         raise AutogradeError(
-            f"{grader_path} does not exist. Copy .github/autograde/examples/grader.py and customize it."
+            f"{grader_path} does not exist. Copy week0/exercises/grader.py and customize it."
         )
 
     config_path = temp_dir / "config.json"

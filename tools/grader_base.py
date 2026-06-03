@@ -109,6 +109,7 @@ def add_item(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=("llm",), default="llm")
     parser.add_argument("--submission-dir", required=True)
     parser.add_argument("--config", required=True)
     parser.add_argument("--output", required=True)

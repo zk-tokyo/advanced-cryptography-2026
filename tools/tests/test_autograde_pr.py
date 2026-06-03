@@ -8,6 +8,7 @@ from pathlib import Path
 from tools.autograde_pr import (
     classify_changed_files,
     evaluate_grade,
+    has_python_solution_submission,
     load_simple_yaml,
     prepare_runtime_config,
 )
@@ -28,6 +29,16 @@ class ClassifyChangedFilesTest(unittest.TestCase):
         self.assertTrue(result.should_grade)
         self.assertTrue(result.valid)
         self.assertEqual(result.week, "week1")
+        self.assertEqual(result.submitter, "alice")
+
+    def test_accepts_week_zero_sample_submission(self) -> None:
+        result = classify_changed_files(
+            [{"filename": "week0/exercises/submissions/alice/answer.md"}]
+        )
+
+        self.assertTrue(result.should_grade)
+        self.assertTrue(result.valid)
+        self.assertEqual(result.week, "week0")
         self.assertEqual(result.submitter, "alice")
 
     def test_rejects_mixed_submission_and_non_submission_paths(self) -> None:
@@ -62,6 +73,13 @@ class ClassifyChangedFilesTest(unittest.TestCase):
 
         self.assertTrue(result.should_grade)
         self.assertFalse(result.valid)
+
+    def test_detects_python_solution_submission(self) -> None:
+        result = has_python_solution_submission(
+            [{"filename": "week0/exercises/submissions/alice/solution.py"}]
+        )
+
+        self.assertTrue(result)
 
 
 class EvaluateGradeTest(unittest.TestCase):

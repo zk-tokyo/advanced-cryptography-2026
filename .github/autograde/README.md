@@ -4,6 +4,9 @@
 採点処理は信頼できるbase branch側のコードだけを実行し、PR側の提出物は
 「読むだけのデータ」として扱います。
 
+Python穴埋め課題だけは、Secretを持たない別workflowで提出コードを実行します。
+LLM採点用workflowでは、提出されたPythonコードを実行しません。
+
 ## 提出PRの形式
 
 課題提出PRでは、次の1ディレクトリ配下だけを変更してください。
@@ -23,8 +26,8 @@ weekN/exercises/submissions/<submitter>/
 weekN/exercises/grader.py
 ```
 
-まず `.github/autograde/examples/grader.py` をコピーして、`PROBLEM_STATEMENT`,
-`RUBRIC`, `REFERENCE_ANSWER` と必要な追加チェックだけを書き換えてください。
+まず `week0/exercises/grader.py` をコピーして、`PROBLEM_STATEMENT`,
+`RUBRIC`, `REFERENCE_ANSWER` を書き換えてください。
 CLI引数、設定読み込み、OpenRouter呼び出し、JSON出力は `tools.grader_base` が
 処理します。
 
@@ -33,7 +36,7 @@ CLI引数、設定読み込み、OpenRouter呼び出し、JSON出力は `tools.g
 ```python
 from __future__ import annotations
 
-from tools.grader_base import Grade, Submission, run_llm_grader
+from tools.grader_base import run_llm_grader
 
 PROBLEM_STATEMENT = """
 問題文、前提、使ってよい定理、提出形式を書く。
@@ -50,18 +53,12 @@ REFERENCE_ANSWER = """
 模範回答、期待する証明方針、重要な論点を書く。
 """
 
-
-def adjust_grade(grade: Grade, submission: Submission) -> Grade:
-    return grade
-
-
 if __name__ == "__main__":
     raise SystemExit(
         run_llm_grader(
             problem_statement=PROBLEM_STATEMENT,
             rubric=RUBRIC,
             reference_answer=REFERENCE_ANSWER,
-            adjust_grade=adjust_grade,
         )
     )
 ```
@@ -100,6 +97,21 @@ graderの出力JSONは次の形式です。
 
 `PROBLEM_STATEMENT` と `REFERENCE_ANSWER` は公開の採点ガイドとして扱います。
 学生に見せたくない模範回答はこのリポジトリに置かないでください。
+
+## Python実行採点
+
+Python穴埋め課題では、各weekの `grader.py` にPython実行採点用のテストケースも定義します。
+
+```text
+weekN/exercises/grader.py
+```
+
+学生は `weekN/exercises/submissions/<submitter>/solution.py` を提出します。
+`python-grade` workflowはSecretなし・読み取り権限のみで動き、trusted base側の
+`grader.py --mode python` だけを実行します。PR側のコードは提出物として読み込まれ、
+テスト用subprocess内で実行されます。
+
+Week 0の `grader.py` は、LLM採点とPython実行採点を同じファイルにまとめたサンプルです。
 
 ## モデル設定
 

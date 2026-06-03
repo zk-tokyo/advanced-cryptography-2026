@@ -1,0 +1,40 @@
+name: Python Grade
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  contents: read
+
+jobs:
+  python-grade:
+    name: python-grade
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out trusted base branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Check out pull request head
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: _python_submission
+          persist-credentials: false
+
+      - name: Run Python autograder
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 tools/python_autograde_pr.py \
+            --event-path "$GITHUB_EVENT_PATH" \
+            --base-dir . \
+            --head-dir _python_submission \
+            --config .github/autograde/config.yml
