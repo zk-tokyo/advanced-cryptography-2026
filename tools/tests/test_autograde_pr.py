@@ -41,6 +41,17 @@ class ClassifyChangedFilesTest(unittest.TestCase):
         self.assertEqual(result.week, "week0")
         self.assertEqual(result.submitter, "alice")
 
+    def test_ignores_submission_gitkeep(self) -> None:
+        result = classify_changed_files(
+            [
+                {"filename": "week0/exercises/submissions/.gitkeep"},
+                {"filename": "README.md"},
+            ]
+        )
+
+        self.assertFalse(result.should_grade)
+        self.assertTrue(result.valid)
+
     def test_rejects_mixed_submission_and_non_submission_paths(self) -> None:
         result = classify_changed_files(
             [

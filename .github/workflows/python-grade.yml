@@ -33,6 +33,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
+          if [ ! -f tools/python_autograde_pr.py ]; then
+            echo "Python autograder is not available on the trusted base branch yet; skipped." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           python3 tools/python_autograde_pr.py \
             --event-path "$GITHUB_EVENT_PATH" \
             --base-dir . \

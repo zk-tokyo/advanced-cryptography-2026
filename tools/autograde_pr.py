@@ -232,6 +232,8 @@ def classify_changed_files(files: list[dict[str, Any]]) -> Classification:
             paths_to_check.append(previous_filename)
 
         for path in paths_to_check:
+            if is_submission_placeholder(path):
+                continue
             match = SUBMISSION_RE.match(path)
             if match:
                 touched_submission = True
@@ -250,6 +252,7 @@ def classify_changed_files(files: list[dict[str, Any]]) -> Classification:
         str(file_info.get("filename", ""))
         for file_info in files
         if not SUBMISSION_RE.match(str(file_info.get("filename", "")))
+        and not is_submission_placeholder(str(file_info.get("filename", "")))
     ]
     invalid_paths.extend(path for path in external_paths if path)
 
@@ -284,7 +287,14 @@ def classify_changed_files(files: list[dict[str, Any]]) -> Classification:
 
 
 def touched_any_submission_path(paths: list[str]) -> bool:
-    return any("/exercises/submissions/" in path for path in paths)
+    return any(
+        "/exercises/submissions/" in path and not is_submission_placeholder(path)
+        for path in paths
+    )
+
+
+def is_submission_placeholder(path: str) -> bool:
+    return path.endswith("/exercises/submissions/.gitkeep")
 
 
 def has_python_solution_submission(files: list[dict[str, Any]]) -> bool:
