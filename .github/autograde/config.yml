@@ -1,0 +1,9 @@
+provider: openrouter
+model: moonshotai/kimi-k2.6
+pass_score: 70
+temperature: 0
+seed: 2026
+max_tokens: 3000
+max_submission_bytes: 200000
+reasoning_effort: none
+reasoning_exclude: true
