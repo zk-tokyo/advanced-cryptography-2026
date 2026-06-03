@@ -33,12 +33,12 @@ class BuildReasoningConfigTest(unittest.TestCase):
     def test_builds_reasoning_config_from_autograde_config(self) -> None:
         reasoning = build_reasoning_config(
             {
-                "reasoning_effort": "minimal",
+                "reasoning_effort": "none",
                 "reasoning_exclude": True,
             }
         )
 
-        self.assertEqual(reasoning, {"effort": "minimal", "exclude": True})
+        self.assertEqual(reasoning, {"effort": "none", "exclude": True})
 
 
 class ParseJsonObjectTest(unittest.TestCase):
