@@ -91,6 +91,19 @@ class EvaluateGradeTest(unittest.TestCase):
 
         self.assertFalse(result["pass"])
 
+    def test_blank_summary_gets_fallback(self) -> None:
+        result = evaluate_grade(
+            {
+                "score": 70,
+                "summary": "",
+                "items": [],
+                "needs_human_review": False,
+            },
+            70,
+        )
+
+        self.assertEqual(result["summary"], "No grading summary was provided.")
+
 
 class ConfigTest(unittest.TestCase):
     def test_loads_simple_yaml_and_runtime_config(self) -> None:

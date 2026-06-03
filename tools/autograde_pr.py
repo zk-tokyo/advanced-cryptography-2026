@@ -464,8 +464,8 @@ def evaluate_grade(grade: dict[str, Any], pass_score: float) -> dict[str, Any]:
         raise AutogradeError("grader score must be between 0 and 100.")
 
     summary = grade.get("summary")
-    if not isinstance(summary, str) or not summary.strip():
-        raise AutogradeError("grader output must include non-empty summary.")
+    if not isinstance(summary, str):
+        raise AutogradeError("grader output must include summary string.")
 
     items = grade.get("items")
     if not isinstance(items, list):
@@ -477,6 +477,7 @@ def evaluate_grade(grade: dict[str, Any], pass_score: float) -> dict[str, Any]:
 
     evaluated = dict(grade)
     evaluated["score"] = float(score)
+    evaluated["summary"] = summary.strip() or "No grading summary was provided."
     evaluated["pass"] = float(score) >= pass_score
     evaluated["needs_human_review"] = needs_human_review
     return evaluated
