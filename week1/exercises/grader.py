@@ -6,58 +6,66 @@ from __future__ import annotations
 from tools.grader_base import Grade, Submission, cap_score, run_llm_grader
 
 
+# 問題文:
+# LLMが課題の前提や提出形式を取り違えないように、採点に必要な問題内容を書く。
 PROBLEM_STATEMENT = """
-Explain why the toy commitment Com(m; r) = H(m || r) is binding only as long as
-the hash function H is collision resistant.
+トイコミットメント `Com(m; r) = H(m || r)` が、ハッシュ関数 `H` の衝突困難性に
+依存してbindingであることを説明してください。
 
-The answer should:
-1. State the binding property for this construction.
-2. Explain how two different valid openings imply a collision in H.
-3. Mention at least one limitation of the toy construction.
+答案では次の点に触れてください。
 
-The expected submitted file is answer.md.
+1. この構成におけるbinding性の意味を述べる。
+2. 2つの異なる有効なopeningが存在すると、`H` の衝突が得られることを説明する。
+3. このトイ構成の限界を少なくとも1つ述べる。
+
+提出ファイルは `answer.md` とします。
 """
 
 
+# 採点基準:
+# 配点と部分点の方針を書く。合計は100点にする。
 RUBRIC = """
-Grade out of 100 points.
+100点満点で採点してください。
 
-- Binding definition: 25 points
-- Reduction from two openings to a hash collision: 40 points
-- Clear explanation of assumptions and limitations: 20 points
-- Organization and notation: 15 points
+- binding性の定義: 25点
+- 2つのopeningからハッシュ衝突を導く説明: 40点
+- 仮定と限界の説明: 20点
+- 構成・記法・読みやすさ: 15点
 
-Award partial credit for substantially correct reasoning even if notation is not
-perfect. Do not require the exact wording of the reference answer.
+表記が完全でなくても、実質的に正しい推論には部分点を与えてください。
+模範回答と同じ言い回しである必要はありません。
 """
 
 
+# 模範回答:
+# 正答性・重要論点・部分点判断の基準として使う。完全一致は要求しない。
 REFERENCE_ANSWER = """
-A commitment is binding if, after publishing c = H(m || r), it is infeasible for
-an adversary to find two distinct openings (m, r) and (m', r') such that both
-verify against the same commitment c.
+コミットメントがbindingであるとは、コミットメント値 `c = H(m || r)` を公開した後に、
+同じ `c` に対して検証が通る2つの異なるopening `(m, r)` と `(m', r')` を見つけることが
+困難である、という意味である。
 
-For this construction, two distinct valid openings satisfy
-H(m || r) = c = H(m' || r'). If the encoded strings m || r and m' || r' are
-different, this is a collision in H. Therefore, an adversary who breaks binding
-can be used to find a collision in the hash function, assuming the encoding is
-unambiguous.
+この構成で2つの異なる有効なopeningが存在するなら、
+`H(m || r) = c = H(m' || r')` が成り立つ。`m || r` と `m' || r'` のエンコードが
+曖昧でなく、2つの入力文字列が異なるなら、これは `H` の衝突である。
+したがってbinding性を破る攻撃者から、ハッシュ関数の衝突を見つける攻撃者を構成できる。
 
-Limitations include that this toy construction does not by itself prove hiding,
-depends on collision resistance and unambiguous encoding, and may need domain
-separation or length-prefixing in real protocols.
+限界として、この構成だけではhiding性は示されないこと、衝突困難性と曖昧でない
+エンコードに依存すること、実際のプロトコルではlength-prefixingやdomain separationが
+必要になり得ることなどが挙げられる。
 """
 
 
+# 追加採点指示:
+# 厳しく見るポイントや、人間レビューに回すべき条件を書く。
 EXTRA_INSTRUCTIONS = """
-Be strict about answers that only say "because hashes are secure" without
-showing the collision argument.
+「ハッシュは安全だからbindingである」とだけ述べ、衝突への帰着を示していない答案には
+厳しく採点してください。採点結果の説明と各rubric項目のコメントは日本語で書いてください。
 """
 
 
 def adjust_grade(grade: Grade, submission: Submission) -> Grade:
     if not submission.has_file_named("answer.md"):
-        return cap_score(grade, 80, reason="The required answer.md file is missing.")
+        return cap_score(grade, 80, reason="必須の answer.md ファイルが見つかりません。")
     return grade
 
 

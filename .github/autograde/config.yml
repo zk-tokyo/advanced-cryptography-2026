@@ -3,5 +3,7 @@ model: moonshotai/kimi-k2.6
 pass_score: 70
 temperature: 0
 seed: 2026
-max_tokens: 2000
+max_tokens: 6000
 max_submission_bytes: 200000
+reasoning_effort: minimal
+reasoning_exclude: true

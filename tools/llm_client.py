@@ -32,6 +32,7 @@ class OpenRouterClient:
         temperature: float = 0,
         max_tokens: int = 2000,
         seed: int | None = None,
+        reasoning: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         body: dict[str, Any] = {
             "model": model,
@@ -41,6 +42,8 @@ class OpenRouterClient:
         }
         if seed is not None:
             body["seed"] = seed
+        if reasoning:
+            body["reasoning"] = reasoning
         if response_schema is not None:
             body["response_format"] = {
                 "type": "json_schema",

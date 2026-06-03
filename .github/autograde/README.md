@@ -107,5 +107,7 @@ graderの出力JSONは次の形式です。
 モデルは全week共通です。
 モデルだけ一時的に変えたい場合は、GitHub repository variable の
 `AUTOGRADE_MODEL` を設定してください。workflowを書き換える必要はありません。
+Kimi K2.6のようにreasoning tokensを多く使うモデル向けに、デフォルトでは
+reasoningを最小化し、応答には含めない設定にしています。
 
 LLM採点を使う場合は、GitHub Secret `OPENROUTER_API_KEY` が必要です。
