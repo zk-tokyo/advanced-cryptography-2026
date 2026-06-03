@@ -6,6 +6,8 @@ dist/
 build/
 coverage/
 *.tsbuildinfo
+__pycache__/
+*.py[cod]
 
 # Logs
 logs/
