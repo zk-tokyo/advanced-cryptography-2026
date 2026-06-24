@@ -1,0 +1,193 @@
+name: PR Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-test-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  test-submissions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Use Rust stable
+        run: rustup default stable
+
+      - name: Validate and test changed submissions
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_USERNAME: ${{ github.event.pull_request.user.login }}
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags --depth=1 origin "$BASE_REF"
+
+          changed_files="$(mktemp)"
+          submissions="$(mktemp)"
+          export CHANGED_FILES="$changed_files"
+          export SUBMISSIONS_FILE="$submissions"
+
+          git diff --name-only --diff-filter=ACMRTD "origin/$BASE_REF...HEAD" > "$CHANGED_FILES"
+
+          python3 <<'PY'
+          import os
+          import re
+          import tomllib
+          from pathlib import Path, PurePosixPath
+
+          changed_files_path = Path(os.environ["CHANGED_FILES"])
+          submissions_file_path = Path(os.environ["SUBMISSIONS_FILE"])
+          username = os.environ["PR_USERNAME"]
+
+          allowed_dependencies = {"ark-ff", "ark-bn254"}
+          allowed_editions = {"2021", "2024"}
+          disallowed_dependency_sections = (
+              "dev-dependencies",
+              "build-dependencies",
+              "target",
+              "patch",
+              "replace",
+          )
+
+          changed_files = [
+              line.strip()
+              for line in changed_files_path.read_text().splitlines()
+              if line.strip()
+          ]
+
+          if not changed_files:
+              raise SystemExit("No changed files found in this PR.")
+
+          submissions = set()
+          weeks = set()
+
+          for changed_file in changed_files:
+              path = PurePosixPath(changed_file)
+              parts = path.parts
+
+              if len(parts) < 5:
+                  raise SystemExit(
+                      f"Unauthorized path: {changed_file}. "
+                      f"Only week*/submissions/{username}/** may be changed."
+                  )
+
+              week, submissions_dir, owner = parts[0], parts[1], parts[2]
+
+              if not re.fullmatch(r"week[0-9]+", week):
+                  raise SystemExit(
+                      f"Unauthorized path: {changed_file}. "
+                      f"Only week*/submissions/{username}/** may be changed."
+                  )
+
+              if submissions_dir != "submissions" or owner != username:
+                  raise SystemExit(
+                      f"Unauthorized path: {changed_file}. "
+                      f"Only week*/submissions/{username}/** may be changed."
+                  )
+
+              if len(parts) < 6:
+                  raise SystemExit(
+                      f"Invalid submission path: {changed_file}. "
+                      "Expected week/submissions/username/problem/language/..."
+                  )
+
+              problem = parts[3]
+              language = parts[4]
+
+              if week != "week0":
+                  raise SystemExit(
+                      f"Unsupported week: {week}. This sample CI currently accepts week0 only."
+                  )
+
+              if language != "rust":
+                  raise SystemExit(
+                      f"Unsupported language: {language}. This problem accepts rust only."
+                  )
+
+              weeks.add(week)
+              submissions.add((week, problem, language))
+
+          if len(weeks) != 1:
+              raise SystemExit("A PR must contain changes for exactly one week.")
+
+          for week, problem, language in sorted(submissions):
+              manifest_path = (
+                  Path(week)
+                  / "submissions"
+                  / username
+                  / problem
+                  / language
+                  / "Cargo.toml"
+              )
+
+              if not manifest_path.is_file():
+                  raise SystemExit(f"Missing Cargo.toml: {manifest_path}")
+
+              data = tomllib.loads(manifest_path.read_text())
+              package = data.get("package", {})
+              dependencies = data.get("dependencies", {})
+
+              if package.get("name") != "submission":
+                  raise SystemExit(f"{manifest_path}: [package].name must be 'submission'.")
+
+              edition = str(package.get("edition", ""))
+              if edition not in allowed_editions:
+                  raise SystemExit(
+                      f"{manifest_path}: [package].edition must be '2021' or '2024'."
+                  )
+
+              extra_dependencies = set(dependencies) - allowed_dependencies
+              if extra_dependencies:
+                  names = ", ".join(sorted(extra_dependencies))
+                  raise SystemExit(
+                      f"{manifest_path}: unsupported dependencies: {names}. "
+                      "Only ark-ff and ark-bn254 are allowed."
+                  )
+
+              for section in disallowed_dependency_sections:
+                  if section in data:
+                      raise SystemExit(
+                          f"{manifest_path}: [{section}] is not allowed in submissions."
+                      )
+
+              for dependency_name, dependency_spec in dependencies.items():
+                  if isinstance(dependency_spec, dict):
+                      forbidden_keys = {"path", "git", "registry"}
+                      present_forbidden_keys = forbidden_keys & set(dependency_spec)
+                      if present_forbidden_keys:
+                          keys = ", ".join(sorted(present_forbidden_keys))
+                          raise SystemExit(
+                              f"{manifest_path}: dependency {dependency_name} uses "
+                              f"forbidden keys: {keys}."
+                          )
+
+          submissions_file_path.write_text(
+              "".join(
+                  f"{week} {problem} {language}\n"
+                  for week, problem, language in sorted(submissions)
+              )
+          )
+          PY
+
+          while read -r week problem language; do
+            if [[ "$language" != "rust" ]]; then
+              echo "error: unsupported language: $language" >&2
+              exit 1
+            fi
+
+            bash scripts/test-rust-submission.sh "$week" "$problem" "$PR_USERNAME"
+          done < "$SUBMISSIONS_FILE"

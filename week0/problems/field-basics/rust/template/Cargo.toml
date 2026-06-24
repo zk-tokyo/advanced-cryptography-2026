@@ -1,0 +1,8 @@
+[package]
+name = "submission"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ark-ff = "0.6"
+ark-bn254 = "0.6"
