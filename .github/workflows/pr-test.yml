@@ -55,6 +55,12 @@ jobs:
 
           allowed_dependencies = {"ark-ff", "ark-bn254"}
           allowed_editions = {"2021", "2024"}
+          allowed_languages = {"rust", "python"}
+          allowed_python_requirements = {"sympy"}
+          allowed_problem_languages = {
+              ("field-basics", "rust"),
+              ("mod-arithmetic", "python"),
+          }
           disallowed_dependency_sections = (
               "dev-dependencies",
               "build-dependencies",
@@ -113,9 +119,31 @@ jobs:
                       f"Unsupported week: {week}. This sample CI currently accepts week0 only."
                   )
 
-              if language != "rust":
+              if language not in allowed_languages:
                   raise SystemExit(
-                      f"Unsupported language: {language}. This problem accepts rust only."
+                      f"Unsupported language: {language}. "
+                      "This sample CI accepts rust and python only."
+                  )
+
+              if (problem, language) not in allowed_problem_languages:
+                  allowed = ", ".join(
+                      f"{problem_name}/{language_name}"
+                      for problem_name, language_name in sorted(allowed_problem_languages)
+                  )
+                  raise SystemExit(
+                      f"Unsupported problem/language pair: {problem}/{language}. "
+                      f"Allowed pairs: {allowed}."
+                  )
+
+              changed_path_within_submission = parts[5:]
+              allowed_python_files = {("solution.py",), ("requirements.txt",)}
+              if (
+                  language == "python"
+                  and changed_path_within_submission not in allowed_python_files
+              ):
+                  raise SystemExit(
+                      f"Invalid Python submission file: {changed_file}. "
+                      "Python submissions may change solution.py and requirements.txt only."
                   )
 
               weeks.add(week)
@@ -124,7 +152,7 @@ jobs:
           if len(weeks) != 1:
               raise SystemExit("A PR must contain changes for exactly one week.")
 
-          for week, problem, language in sorted(submissions):
+          def validate_rust_submission(week: str, problem: str, language: str) -> None:
               manifest_path = (
                   Path(week)
                   / "submissions"
@@ -175,6 +203,47 @@ jobs:
                               f"forbidden keys: {keys}."
                           )
 
+          def validate_python_submission(week: str, problem: str, language: str) -> None:
+              submission_path = Path(week) / "submissions" / username / problem / language
+              solution_path = submission_path / "solution.py"
+              requirements_path = submission_path / "requirements.txt"
+
+              if not solution_path.is_file():
+                  raise SystemExit(f"Missing solution.py: {solution_path}")
+
+              if not requirements_path.is_file():
+                  raise SystemExit(f"Missing requirements.txt: {requirements_path}")
+
+              for line_number, raw_line in enumerate(
+                  requirements_path.read_text().splitlines(),
+                  start=1,
+              ):
+                  line = raw_line.strip()
+                  if not line or line.startswith("#"):
+                      continue
+
+                  if line.startswith(("-", "http://", "https://", "git+")):
+                      raise SystemExit(
+                          f"{requirements_path}:{line_number}: unsupported requirement: {line}"
+                      )
+
+                  package_name = re.split(r"[<>=!~\[]", line, maxsplit=1)[0].strip()
+                  normalized_name = package_name.lower().replace("_", "-")
+                  if normalized_name not in allowed_python_requirements:
+                      allowed = ", ".join(sorted(allowed_python_requirements))
+                      raise SystemExit(
+                          f"{requirements_path}:{line_number}: unsupported package "
+                          f"{package_name}. Allowed packages: {allowed}."
+                      )
+
+          for week, problem, language in sorted(submissions):
+              if language == "rust":
+                  validate_rust_submission(week, problem, language)
+              elif language == "python":
+                  validate_python_submission(week, problem, language)
+              else:
+                  raise SystemExit(f"Unsupported language: {language}")
+
           submissions_file_path.write_text(
               "".join(
                   f"{week} {problem} {language}\n"
@@ -184,10 +253,12 @@ jobs:
           PY
 
           while read -r week problem language; do
-            if [[ "$language" != "rust" ]]; then
+            if [[ "$language" == "rust" ]]; then
+              bash scripts/test-rust-submission.sh "$week" "$problem" "$PR_USERNAME"
+            elif [[ "$language" == "python" ]]; then
+              bash scripts/test-python-submission.sh "$week" "$problem" "$PR_USERNAME"
+            else
               echo "error: unsupported language: $language" >&2
               exit 1
             fi
-
-            bash scripts/test-rust-submission.sh "$week" "$problem" "$PR_USERNAME"
           done < "$SUBMISSIONS_FILE"
