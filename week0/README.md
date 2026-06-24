@@ -1,34 +1,33 @@
 # Week 0
 
-Week 0 is for practice and sample submissions. Use it to learn the repository
-workflow before submitting later coursework.
+Week 0 は練習用・サンプル提出用です。以降の課題を提出する前に、このリポジトリでの提出手順を確認するために使います。
 
-The Week 0 problem is `field-basics`.
+Week 0 の問題は `field-basics` です。
 
-## Submission Path
+## 提出先
 
-Submit your Rust solution here:
+Rust の解答は次の場所に提出してください。
 
 ```text
 week0/submissions/<github-username>/field-basics/rust/
 ```
 
-Only edit files under:
+編集してよいのは次のディレクトリ以下だけです。
 
 ```text
 week0/submissions/<github-username>/
 ```
 
-Do not edit `problems/`, `.github/`, or `scripts/`.
+`problems/`、`.github/`、`scripts/` は編集しないでください。
 
-Each submission directory must contain:
+各提出ディレクトリには、必ず次のファイルを置いてください。
 
 ```text
 Cargo.toml
 src/lib.rs
 ```
 
-## Copy the Rust Template
+## Rust テンプレートのコピー
 
 ```bash
 mkdir -p week0/submissions/<github-username>/field-basics/rust
@@ -36,7 +35,7 @@ cp -R week0/problems/field-basics/rust/template/. \
   week0/submissions/<github-username>/field-basics/rust/
 ```
 
-## Local Test
+## ローカルテスト
 
 ```bash
 bash scripts/test-rust-submission.sh week0 field-basics <github-username>
@@ -44,10 +43,10 @@ bash scripts/test-rust-submission.sh week0 field-basics <github-username>
 
 ## Pull Request
 
-Use this PR title:
+PR title は次の形式にしてください。
 
 ```text
 [week0] <github-username>
 ```
 
-When CI is green, your sample submission is complete.
+CI が成功すれば、サンプル提出は完了です。
