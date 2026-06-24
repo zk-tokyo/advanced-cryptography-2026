@@ -30,6 +30,9 @@ jobs:
       - name: Validate and test changed submissions
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_BASE_REPO_FULL_NAME: ${{ github.event.pull_request.base.repo.full_name }}
+          PR_AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
+          PR_HEAD_REPO_FULL_NAME: ${{ github.event.pull_request.head.repo.full_name }}
           PR_USERNAME: ${{ github.event.pull_request.user.login }}
         run: |
           set -euo pipefail
@@ -51,16 +54,15 @@ jobs:
 
           changed_files_path = Path(os.environ["CHANGED_FILES"])
           submissions_file_path = Path(os.environ["SUBMISSIONS_FILE"])
+          author_association = os.environ["PR_AUTHOR_ASSOCIATION"]
+          base_repo_full_name = os.environ["PR_BASE_REPO_FULL_NAME"]
+          head_repo_full_name = os.environ["PR_HEAD_REPO_FULL_NAME"]
           username = os.environ["PR_USERNAME"]
 
           allowed_dependencies = {"ark-ff", "ark-bn254"}
           allowed_editions = {"2021", "2024"}
           allowed_languages = {"rust", "python"}
           allowed_python_requirements = {"sympy"}
-          allowed_problem_languages = {
-              ("field-basics", "rust"),
-              ("mod-arithmetic", "python"),
-          }
           disallowed_dependency_sections = (
               "dev-dependencies",
               "build-dependencies",
@@ -68,6 +70,22 @@ jobs:
               "patch",
               "replace",
           )
+          trusted_author_associations = {"OWNER", "MEMBER", "COLLABORATOR"}
+          is_same_repository_pr = head_repo_full_name == base_repo_full_name
+          maintenance_paths = {
+              (".github", "workflows", "pr-test.yml"),
+              ("scripts", "test-python-submission.sh"),
+              ("scripts", "test-rust-submission.sh"),
+          }
+
+          def is_trusted_maintenance_change(path: PurePosixPath) -> bool:
+              return (
+                  (
+                      is_same_repository_pr
+                      or author_association in trusted_author_associations
+                  )
+                  and path.parts in maintenance_paths
+              )
 
           changed_files = [
               line.strip()
@@ -80,10 +98,15 @@ jobs:
 
           submissions = set()
           weeks = set()
+          maintenance_files = set()
 
           for changed_file in changed_files:
               path = PurePosixPath(changed_file)
               parts = path.parts
+
+              if is_trusted_maintenance_change(path):
+                  maintenance_files.add(changed_file)
+                  continue
 
               if len(parts) < 5:
                   raise SystemExit(
@@ -114,25 +137,17 @@ jobs:
               problem = parts[3]
               language = parts[4]
 
-              if week != "week0":
-                  raise SystemExit(
-                      f"Unsupported week: {week}. This sample CI currently accepts week0 only."
-                  )
-
               if language not in allowed_languages:
                   raise SystemExit(
                       f"Unsupported language: {language}. "
                       "This sample CI accepts rust and python only."
                   )
 
-              if (problem, language) not in allowed_problem_languages:
-                  allowed = ", ".join(
-                      f"{problem_name}/{language_name}"
-                      for problem_name, language_name in sorted(allowed_problem_languages)
-                  )
+              problem_test_dir = Path(week) / "problems" / problem / language / "tests"
+              if not problem_test_dir.is_dir():
                   raise SystemExit(
                       f"Unsupported problem/language pair: {problem}/{language}. "
-                      f"Allowed pairs: {allowed}."
+                      f"Missing tests directory: {problem_test_dir}."
                   )
 
               changed_path_within_submission = parts[5:]
@@ -149,8 +164,15 @@ jobs:
               weeks.add(week)
               submissions.add((week, problem, language))
 
-          if len(weeks) != 1:
+          if submissions and len(weeks) != 1:
               raise SystemExit("A PR must contain changes for exactly one week.")
+
+          if not submissions:
+              if maintenance_files:
+                  submissions_file_path.write_text("")
+                  raise SystemExit(0)
+
+              raise SystemExit("No submission changes found in this PR.")
 
           def validate_rust_submission(week: str, problem: str, language: str) -> None:
               manifest_path = (
