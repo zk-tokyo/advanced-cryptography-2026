@@ -51,6 +51,8 @@ def field_inv(a: int, p: int) -> int:
     を満たします。g == 1 なら x が逆元です。ただし x は負のことが
     あるので注意してください。
     """
+    if a % p == 0:
+        raise ValueError("0 has no inverse in F_p")
     (_, result, _) = extended_gcd(a % p, p)
     return (result + p) % p
 
