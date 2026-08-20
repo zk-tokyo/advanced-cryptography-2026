@@ -10,4 +10,4 @@ ZK, or not ZK（ケーススタディ: AIエージェント保険）
 
 ## 課題
 
-WIP
+[SumCheck is All You Need](./problems/sumcheck-is-all-you-need/README.md)
