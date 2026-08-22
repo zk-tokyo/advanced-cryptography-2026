@@ -58,19 +58,12 @@ def share(secret: int, randomness: list[int], modulus: int) -> ShareVector:
     The values in `randomness` are the first shares. Return canonical field
     elements in 0..modulus-1. At least two parties are required.
     """
-    _validate_modulus(modulus)
-    if len(randomness) < 1:
-        raise ValueError("a share vector must contain at least two parties")
-    shares = [value % modulus for value in randomness]
-    shares.append((secret - sum(randomness)) % modulus)
-    return shares
+    raise NotImplementedError
 
 
 def reconstruct(shares: ShareVector, modulus: int) -> int:
     """Open additive shares and return the canonical field element."""
-    _validate_modulus(modulus)
-    _validate_same_share_count(shares)
-    return sum(shares) % modulus
+    raise NotImplementedError
 
 
 # ================================================================ Part A2
@@ -80,12 +73,7 @@ def add_shares(
     modulus: int,
 ) -> ShareVector:
     """Add two shared values component-wise without opening them."""
-    _validate_modulus(modulus)
-    _validate_same_share_count(left_shares, right_shares)
-    return [
-        (left + right) % modulus
-        for left, right in zip(left_shares, right_shares)
-    ]
+    raise NotImplementedError
 
 
 # ---------------------------------------------------------- PROVIDED helpers
@@ -133,21 +121,7 @@ def beaver_multiply(
 
     Add the public term d*e to party 0 only.
     """
-    a_shares, b_shares, c_shares = triple
-    _validate_modulus(modulus)
-    _validate_same_share_count(x_shares, y_shares, a_shares, b_shares, c_shares)
-
-    d_shares = sub_shares(x_shares, a_shares, modulus)
-    e_shares = sub_shares(y_shares, b_shares, modulus)
-    d = reconstruct(d_shares, modulus)
-    e = reconstruct(e_shares, modulus)
-
-    result = [
-        (c + d * b + e * a) % modulus
-        for a, b, c in zip(a_shares, b_shares, c_shares)
-    ]
-    result[0] = (result[0] + d * e) % modulus
-    return result
+    raise NotImplementedError
 
 
 # ========================================================== PROVIDED XOR MPC
@@ -195,14 +169,7 @@ def ot_receiver_request(
     B = g^b for choice 0, and B = A*g^b for choice 1.
     The receiver secret b is sampled from 0..q-1, including zero.
     """
-    validate_group_element(sender_public, "sender_public")
-    validate_choice(choice)
-    validate_receiver_scalar(receiver_secret, "receiver_secret")
-
-    g_b = pow(OT_G, receiver_secret, OT_P)
-    if choice == 0:
-        return g_b
-    return (sender_public * g_b) % OT_P
+    raise NotImplementedError
 
 
 def ot_sender_encrypt(
@@ -216,21 +183,7 @@ def ot_sender_encrypt(
     Derive the branch-0 key from B^a and the branch-1 key from (B/A)^a.
     Use derive_pad(shared, branch, length), then xor_bytes(message, pad).
     """
-    validate_sender_scalar(sender_secret, "sender_secret")
-    validate_group_element(request, "request")
-    if len(message_0) != len(message_1):
-        raise ValueError("messages must have equal length")
-
-    sender_public = pow(OT_G, sender_secret, OT_P)
-    b_over_a = (request * pow(sender_public, -1, OT_P)) % OT_P
-
-    key_0 = pow(request, sender_secret, OT_P)
-    key_1 = pow(b_over_a, sender_secret, OT_P)
-
-    pad_0 = derive_pad(key_0, 0, len(message_0))
-    pad_1 = derive_pad(key_1, 1, len(message_1))
-
-    return xor_bytes(message_0, pad_0), xor_bytes(message_1, pad_1)
+    raise NotImplementedError
 
 
 def ot_receiver_decrypt(
@@ -240,14 +193,7 @@ def ot_receiver_decrypt(
     ciphertexts: tuple[bytes, bytes],
 ) -> bytes:
     """Decrypt the selected OT ciphertext using A^b."""
-    validate_group_element(sender_public, "sender_public")
-    validate_choice(choice)
-    validate_receiver_scalar(receiver_secret, "receiver_secret")
-
-    shared = pow(sender_public, receiver_secret, OT_P)
-    ciphertext = ciphertexts[choice]
-    pad = derive_pad(shared, choice, len(ciphertext))
-    return xor_bytes(ciphertext, pad)
+    raise NotImplementedError
 
 
 # ---------------------------------------------------------- PROVIDED OT glue
@@ -300,38 +246,4 @@ def gmw_and(
     `ot_secrets` contains (sender_secret, receiver_secret) for session 01 and
     session 10, in that order.
     """
-    x0, x1 = x_shares
-    y0, y1 = y_shares
-    r01, r10 = masks
-    _validate_bit(x0, "x_shares[0]")
-    _validate_bit(x1, "x_shares[1]")
-    _validate_bit(y0, "y_shares[0]")
-    _validate_bit(y1, "y_shares[1]")
-    _validate_bit(r01, "masks[0]")
-    _validate_bit(r10, "masks[1]")
-    if len(ot_secrets) != 2:
-        raise ValueError("ot_secrets must contain secrets for two sessions")
-    (sender_secret_01, receiver_secret_01), (sender_secret_10, receiver_secret_10) = (
-        ot_secrets
-    )
-
-    # Session 01: P0 sends (r01, r01 XOR x0), P1 chooses y1.
-    received_01 = _ot_transfer_bit(
-        r01,
-        r01 ^ x0,
-        y1,
-        sender_secret_01,
-        receiver_secret_01,
-    )
-    # Session 10: P1 sends (r10, r10 XOR x1), P0 chooses y0.
-    received_10 = _ot_transfer_bit(
-        r10,
-        r10 ^ x1,
-        y0,
-        sender_secret_10,
-        receiver_secret_10,
-    )
-
-    z0 = (x0 & y0) ^ r01 ^ received_10
-    z1 = (x1 & y1) ^ received_01 ^ r10
-    return z0, z1
+    raise NotImplementedError
