@@ -4,6 +4,12 @@ Week 5 の課題では主にTFHEのProgrammable BootstrappingとHomNANDのtoy実
 
 詳細な課題内容については `problems/tfhe-toy-python`を参照してください。
 
+## 講義スライド
+
+以下のslidevを参照してください。当日(8/29)まで随時修正や補足情報の追加を加えて行きますが、予習用として活用いただいて構いません。
+
+https://acp26-week5-presentation-agent.zk-tokyo-japan.workers.dev/1
+
 ## 提出先
 
 ```text
