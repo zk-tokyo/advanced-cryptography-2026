@@ -33,14 +33,12 @@ from given import (
 
 def field_add(a: int, b: int, p: int) -> int:
     """F_p での足し算です。(a + b) mod p を 0..p-1 の範囲で返してください。"""
-    #raise NotImplementedError
-    return (a + b) % p
+    raise NotImplementedError
 
 
 def field_mul(a: int, b: int, p: int) -> int:
     """F_p での掛け算です。(a * b) mod p を 0..p-1 の範囲で返してください。"""
-    #raise NotImplementedError
-    return (a * b) % p
+    raise NotImplementedError
 
 
 def field_inv(a: int, p: int) -> int:
@@ -54,11 +52,7 @@ def field_inv(a: int, p: int) -> int:
     を満たします。g == 1 なら x が逆元です。ただし x は負のことが
     あるので注意してください。
     """
-    #raise NotImplementedError
-    if a % p == 0:
-        raise ValueError("0 has no inverse in F_p")
-    g, x, _ = extended_gcd(a % p, p)
-    return x % p
+    raise NotImplementedError
 
 
 # =================================================================== Part 2
@@ -106,27 +100,7 @@ def ec_add(P: Point, Q: Point, curve: Curve) -> Point:
     計算結果が曲線から外れていたら、公式のどこか(たいていは y_R の符号)が
     間違っています。is_on_curve(P, curve) で確かめられます。
     """
-    #raise NotImplementedError
-    if P is None:
-        return Q
-    if Q is None:
-        return P
-
-    p = curve.p
-    x_P, y_P = P
-    x_Q, y_Q = Q
-
-    if x_P == x_Q and (y_P + y_Q) % p == 0:
-        return None
-    if P == Q:
-        lam = (3 * x_P**2 + curve.a) * field_inv(2 * y_P, p) % p
-    else:
-        lam = (y_Q - y_P) * field_inv((x_Q - x_P) % p, p) % p
-
-    x_R = (lam**2 - x_P - x_Q) % p
-    y_R = (lam * (x_P - x_R) - y_P) % p
-    R: Point = (x_R % p, y_R % p)
-    return R
+    raise NotImplementedError
 
 
 def ec_scalar_mul(k: int, P: Point, curve: Curve) -> Point:
@@ -144,14 +118,8 @@ def ec_scalar_mul(k: int, P: Point, curve: Curve) -> Point:
 
     これは quotient = k // 2、remainder = k % 2 と同じです。
     """
-    #raise NotImplementedError
-    R: Point = None
-    while k != 0:
-        k, r = divmod(k, 2)
-        if r == 1:
-            R = ec_add(R, P, curve)
-        P = ec_add(P, P, curve)
-    return R
+    raise NotImplementedError
+
 
 # =================================================================== Part 3
 # 離散対数の知識のシグマプロトコル(Schnorr の対話証明)と、Fiat-Shamir
@@ -172,8 +140,7 @@ def sigma_commit(r: int, curve: Curve) -> Point:
 
     ヒント: 生成元 G には curve.G としてアクセスできます。
     """
-    # raise NotImplementedError
-    return ec_scalar_mul(r, curve.G, curve)
+    raise NotImplementedError
 
 
 def sigma_response(x: int, r: int, e: int, curve: Curve) -> int:
@@ -183,8 +150,7 @@ def sigma_response(x: int, r: int, e: int, curve: Curve) -> int:
     mod は curve.n(G の位数)で取ります。curve.p と取り違えやすいので
     注意してください。
     """
-    # raise NotImplementedError
-    return (r + e * x) % curve.n
+    raise NotImplementedError
 
 
 def sigma_verify(pubkey: Point, R: Point, e: int, s: int, curve: Curve) -> bool:
@@ -193,10 +159,7 @@ def sigma_verify(pubkey: Point, R: Point, e: int, s: int, curve: Curve) -> bool:
     これで確認になっている理由(完全性):
         s * G = (r + e*x) * G = r*G + e*(x*G) = R + e * pubkey
     """
-    # raise NotImplementedError
-    return ec_scalar_mul(s, curve.G, curve) == ec_add(
-        R, ec_scalar_mul(e, pubkey, curve), curve
-    )
+    raise NotImplementedError
 
 
 def schnorr_sign(
@@ -220,13 +183,7 @@ def schnorr_sign(
     (tests/public.py の nonce 再利用テスト参照)。この課題ではテストの
     再現性のため、引数で受け取る作りにしています。
     """
-    # raise NotImplementedError
-    R = ec_scalar_mul(nonce, curve.G, curve)
-    pubkey = ec_scalar_mul(x, curve.G, curve)
-    e = challenge_hash(R, pubkey, message, curve.n)
-    s = sigma_response(x, nonce, e, curve)
-
-    return (R, s)
+    raise NotImplementedError
 
 
 def schnorr_verify(
@@ -239,10 +196,7 @@ def schnorr_verify(
     を自分で計算し直し、s * G == R + e * pubkey を確認してください
     (sigma_verify がそのまま使えます)。
     """
-    # raise NotImplementedError
-    R, s = signature
-    e = challenge_hash(R, pubkey, message, curve.n)
-    return sigma_verify(pubkey, R, e, s, curve)
+    raise NotImplementedError
 
 
 # =================================================================== 簡易チェック
